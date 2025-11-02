@@ -3,160 +3,397 @@
 
 ---
 
-<h1 id="how-to-verify-everything-is-working">How to Verify Everything is Working</h1>
-<p>Run these checks in order:</p>
-<h2 id="check-docker-containers-are-running">1. Check Docker containers are running:</h2>
-<pre class=" language-powershell"><code class="prism  language-powershell"><span class="token comment"># In Windows PowerShell (not WSL)</span>
-docker<span class="token operator">-</span>compose <span class="token function">ps</span>
-</code></pre>
-<p><strong>Expected output:</strong></p>
-<pre><code>NAME               STATUS
-ngam-je-pgadmin    Up X minutes
-ngam-je-postgres   Up X minutes (healthy)
-</code></pre>
-<h2 id="check-pgadmin">2. Check pgAdmin:</h2>
-<ol>
-<li>Open browser: <a href="http://localhost:5050">http://localhost:5050</a></li>
-<li>Should see pgAdmin dashboard</li>
-<li>Expand <strong>Servers → Ngam-je Local → Databases → ngamje_db → Schemas → public → Tables</strong></li>
-<li>Should see <code>users</code> and <code>alembic_version</code> tables</li>
-</ol>
-<h2 id="check-database-has-tables">3. Check database has tables:</h2>
-<pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># In WSL</span>
-docker <span class="token function">exec</span> -it ngam-je-postgres psql -U ngamje -d ngamje_db -c <span class="token string">"\dt"</span>
-</code></pre>
-<p><strong>Expected output:</strong></p>
-<pre><code> Schema |      Name       | Type  | Owner
---------+-----------------+-------+--------
- public | alembic_version | table | ngamje
- public | users           | table | ngamje
-(2 rows)
-</code></pre>
-<h2 id="check-backend-is-running">4. Check backend is running:</h2>
-<p>In WSL, run:</p>
-<pre class=" language-bash"><code class="prism  language-bash"><span class="token function">cd</span> /mnt/c/Users/<span class="token punctuation">[</span>YOUR-USERNAME<span class="token punctuation">]</span>/path/to/ngam-je/backend
-uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
-</code></pre>
-<p><strong>Should see:</strong></p>
-<pre><code>INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Application startup complete.
-</code></pre>
-<h2 id="test-api-endpoints-in-browser">5. Test API endpoints in browser:</h2>
-<p>Open these URLs while backend is running:</p>
+<h1 id="complete-windows-setup-guide-for-ngam-je-backend-postgresql--pgadmin--fastapi">Complete Windows Setup Guide for Ngam-Je Backend (PostgreSQL + pgAdmin + FastAPI)</h1>
+<h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li><strong><a href="http://localhost:8000">http://localhost:8000</a></strong> - Should see: <code>{"message":"Welcome to Ngam-Je API"}</code></li>
-<li><strong><a href="http://localhost:8000/docs">http://localhost:8000/docs</a></strong> - Should see Swagger UI (interactive API docs)</li>
-<li><strong><a href="http://localhost:8000/api/v1/health">http://localhost:8000/api/v1/health</a></strong> - Should see: <code>{"status":"healthy"}</code></li>
-</ul>
-<h2 id="test-creating-a-user-optional">6. Test creating a user (Optional):</h2>
-<p>In the browser at <a href="http://localhost:8000/docs:">http://localhost:8000/docs:</a></p>
-<ol>
-<li>Find <strong>POST /api/v1/auth/signup</strong></li>
-<li>Click <strong>"Try it out"</strong></li>
-<li>Fill in the request body:</li>
-</ol>
-<pre class=" language-json"><code class="prism  language-json">   <span class="token punctuation">{</span>
-     <span class="token string">"email"</span><span class="token punctuation">:</span> <span class="token string">"test@example.com"</span><span class="token punctuation">,</span>
-     <span class="token string">"username"</span><span class="token punctuation">:</span> <span class="token string">"testuser"</span><span class="token punctuation">,</span>
-     <span class="token string">"password"</span><span class="token punctuation">:</span> <span class="token string">"testpassword123"</span>
-   <span class="token punctuation">}</span>
-</code></pre>
-<ol start="4">
-<li>Click <strong>"Execute"</strong></li>
-<li>Should get <strong>201 Created</strong> response with user data</li>
-</ol>
-<p><strong>Then verify in pgAdmin:</strong></p>
-<ul>
-<li>Right-click <strong>Tables → users → View/Edit Data → All Rows</strong></li>
-<li>Should see your test user!</li>
-</ul>
-<hr>
-<h2 id="why-uv-run-uvicorn-src.app.mainapp---reload---host-0.0.0.0---port-8000">Why <code>uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000</code>?</h2>
-<p>Let me break down each part:</p>
-<h3 id="uv-run"><code>uv run</code></h3>
-<ul>
-<li><strong>Why?</strong> Automatically uses the virtual environment (<code>.venv</code>) without manual activation</li>
-<li><strong>Without it:</strong> You’d need to activate <code>.venv</code> first, which is annoying and error-prone</li>
-<li><strong>Alternative:</strong> Manually run <code>.venv/bin/activate</code> then <code>uvicorn ...</code> (more steps)</li>
-</ul>
-<h3 id="uvicorn"><code>uvicorn</code></h3>
-<ul>
-<li><strong>What?</strong> ASGI server that runs FastAPI applications</li>
-<li><strong>Why?</strong> FastAPI needs a server to handle HTTP requests</li>
-<li><strong>Think of it as:</strong> The engine that runs your FastAPI app</li>
-</ul>
-<h3 id="src.app.mainapp"><code>src.app.main:app</code></h3>
-<ul>
-<li><code>src.app.main</code> - Python module path to your file (<code>src/app/main.py</code>)</li>
-<li><code>:app</code> - Variable name inside <code>main.py</code> that holds your FastAPI application</li>
-<li><strong>Why?</strong> Tells uvicorn exactly which app to run</li>
-</ul>
-<h3 id="reload"><code>--reload</code></h3>
-<ul>
-<li><strong>What?</strong> Auto-restarts server when you change code</li>
-<li><strong>Why?</strong> So you don’t have to stop/start server every time you edit a file</li>
-<li><strong>Only use in development!</strong> Not in production</li>
-</ul>
-<h3 id="host-0.0.0.0"><code>--host 0.0.0.0</code></h3>
-<ul>
-<li><strong>What?</strong> Listens on all network interfaces</li>
-<li><strong>Why?</strong> Allows access from:
-<ul>
-<li><code>localhost</code> (your machine)</li>
-<li><code>127.0.0.1</code> (loopback)</li>
-<li>Your computer’s IP address (if needed)</li>
-</ul>
+<li>
+<p>Windows 10/11</p>
 </li>
-<li><strong>Without it:</strong> Only accessible from localhost, which can cause issues</li>
+<li>
+<p>Admin access to your computer</p>
+</li>
 </ul>
-<h3 id="port-8000"><code>--port 8000</code></h3>
-<ul>
-<li><strong>What?</strong> Run server on port 8000</li>
-<li><strong>Why?</strong> Standard port for backend APIs (doesn’t conflict with frontend on 3000)</li>
-<li><strong>You can change it:</strong> <code>--port 3001</code> if port 8000 is in use</li>
-</ul>
-<hr>
-<h2 id="alternative-commands-and-why-we-dont-use-them">Alternative Commands (and why we don’t use them):</h2>
-<h3 id="❌-fastapi-dev-simpler-but-doesnt-work-in-your-setup">❌ <code>fastapi dev</code> (Simpler but doesn’t work in your setup)</h3>
-<pre class=" language-bash"><code class="prism  language-bash">uv run fastapi dev
-<span class="token comment"># Error: Need to install "fastapi[standard]"</span>
-</code></pre>
-<p><strong>Why it fails:</strong> Your project uses minimal FastAPI without the <code>[standard]</code> extras</p>
-<h3 id="❌-manual-activation-more-steps">❌ Manual activation (More steps)</h3>
-<pre class=" language-bash"><code class="prism  language-bash"><span class="token function">source</span> .venv/bin/activate  <span class="token comment"># Activate venv</span>
-uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
-</code></pre>
-<p><strong>Why we use <code>uv run</code> instead:</strong> One command vs two, less error-prone</p>
-<h3 id="❌-without---reload-have-to-restart-manually">❌ Without <code>--reload</code> (Have to restart manually)</h3>
-<pre class=" language-bash"><code class="prism  language-bash">uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000
-</code></pre>
-<p><strong>Why we add <code>--reload</code>:</strong> Auto-restart on code changes during development</p>
-<hr>
-<h2 id="quick-verification-checklist">Quick Verification Checklist</h2>
-<p>✅ <code>docker-compose ps</code> shows both containers “Up”<br>
-✅ <a href="http://localhost:5050">http://localhost:5050</a> shows pgAdmin<br>
-✅ pgAdmin shows “users” table<br>
-✅ <code>docker exec ... \dt</code> shows 2 tables<br>
-✅ <code>uv run uvicorn ...</code> shows “Application startup complete”<br>
-✅ <a href="http://localhost:8000/docs">http://localhost:8000/docs</a> shows Swagger UI<br>
-✅ <a href="http://localhost:8000/api/v1/health">http://localhost:8000/api/v1/health</a> returns <code>{"status":"healthy"}</code></p>
-<p><strong>If all ✅ = Everything is working! 🎉</strong></p>
-<hr>
-<h2 id="to-share-with-teammates">To Share with Teammates</h2>
-<p>"Run these commands to verify setup works:</p>
-<pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># 1. Check Docker</span>
-docker-compose <span class="token function">ps</span>
+<h2 id="step-1-install-docker-desktop">Step 1: Install Docker Desktop</h2>
+<ol>
+<li>
+<p>Download from: <a href="https://www.docker.com/products/docker-desktop/">https://www.docker.com/products/docker-desktop/</a></p>
+</li>
+<li>
+<p>Install and restart your computer if prompted</p>
+</li>
+<li>
+<p>Open Docker Desktop and make sure it’s running (whale icon in system tray)</p>
+</li>
+</ol>
+<h2 id="step-2-install-wsl-windows-subsystem-for-linux">Step 2: Install WSL (Windows Subsystem for Linux)</h2>
+<p>WSL solves Windows networking issues with Docker and gives you a Linux environment like your teacher uses.</p>
+<h3 id="installation">Installation:</h3>
+<ol>
+<li>
+<p>Open PowerShell as Administrator (right-click → Run as Administrator)</p>
+</li>
+<li>
+<p>Run:</p>
+</li>
+</ol>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+wsl <span class="token operator">--</span>install
 
-<span class="token comment"># 2. Enter WSL and go to backend</span>
+</code></pre>
+<ol start="3">
+<li>
+<p>Restart your computer</p>
+</li>
+<li>
+<p>After restart, Ubuntu will open automatically. Create:</p>
+</li>
+</ol>
+<ul>
+<li>
+<p>Username (can be anything)</p>
+</li>
+<li>
+<p>Password (remember this!)</p>
+</li>
+</ul>
+<h3 id="verify-wsl-is-working">Verify WSL is working:</h3>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+wsl <span class="token operator">--</span>status
+
+</code></pre>
+<p>You should see:</p>
+<pre><code>
+Default Distribution: Ubuntu
+
+Default Version: 2
+
+</code></pre>
+<h2 id="step-3-fix-.env-file-important">Step 3: Fix .env File (IMPORTANT!)</h2>
+<p>The .env file needs to be in the backend folder with the correct email format.</p>
+<h3 id="location">Location:</h3>
+<p>Move .env from project root to backend folder:</p>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+cd C:\Users\<span class="token namespace">[YOUR-USERNAME]</span>\path\to\ngam<span class="token operator">-</span>je
+
+<span class="token function">move</span> <span class="token punctuation">.</span>env backend\
+
+</code></pre>
+<h3 id="fix-the-pgadmin-email">Fix the pgAdmin email:</h3>
+<p>Open <code>backend\.env</code> and change:</p>
+<pre><code>
+PGADMIN_EMAIL=admin@ngamje.local
+
+</code></pre>
+<p>To:</p>
+<pre><code>
+PGADMIN_EMAIL=admin@example.com
+
+</code></pre>
+<p><strong>Why?</strong> Windows pgAdmin rejects <code>.local</code> domains - this is a known issue.</p>
+<h2 id="step-4-start-docker-services">Step 4: Start Docker Services</h2>
+<p>Open PowerShell or VSCode terminal in the project root:</p>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+cd C:\Users\<span class="token namespace">[YOUR-USERNAME]</span>\path\to\ngam<span class="token operator">-</span>je
+
+docker<span class="token operator">-</span>compose up <span class="token operator">-</span>d postgres pgadmin
+
+</code></pre>
+<h3 id="check-if-running">Check if running:</h3>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+docker<span class="token operator">-</span>compose <span class="token function">ps</span>
+
+</code></pre>
+<p>You should see both <code>ngam-je-postgres</code> and <code>ngam-je-pgadmin</code> with status “Up”.</p>
+<h2 id="step-5-access-pgadmin">Step 5: Access pgAdmin</h2>
+<ol>
+<li>
+<p>Open browser: <a href="http://localhost:5050">http://localhost:5050</a></p>
+</li>
+<li>
+<p>Login is automatic (no password needed due to dev config)</p>
+</li>
+<li>
+<p>Add your database server:</p>
+</li>
+</ol>
+<ul>
+<li>Right-click “Servers” → “Register” → “Server”</li>
+</ul>
+<p><strong>General tab:</strong></p>
+<ul>
+<li>Name: <code>Ngam-je Local</code></li>
+</ul>
+<p><strong>Connection tab:</strong></p>
+<ul>
+<li>
+<p>Host: <code>postgres</code> (Docker container name, NOT localhost)</p>
+</li>
+<li>
+<p>Port: <code>5432</code></p>
+</li>
+<li>
+<p>Database: <code>ngamje_db</code></p>
+</li>
+<li>
+<p>Username: <code>ngamje</code></p>
+</li>
+<li>
+<p>Password: <code>ngamje_dev_password</code></p>
+</li>
+</ul>
+<ol start="4">
+<li>Click “Save”</li>
+</ol>
+<h2 id="step-6-set-up-backend-in-wsl">Step 6: Set Up Backend in WSL</h2>
+<h3 id="enter-wsl">Enter WSL:</h3>
+<p>In VSCode terminal or PowerShell:</p>
+<pre class=" language-powershell"><code class="prism  language-powershell">
 wsl
+
+</code></pre>
+<p>You’ll see prompt change to: <code>yourname@computername:~$</code></p>
+<h3 id="navigate-to-project">Navigate to project:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
 <span class="token function">cd</span> /mnt/c/Users/<span class="token punctuation">[</span>YOUR-USERNAME<span class="token punctuation">]</span>/path/to/ngam-je/backend
 
-<span class="token comment"># 3. Start backend</span>
+</code></pre>
+<p><strong>Example:</strong></p>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token function">cd</span> /mnt/c/Users/marya/OneDrive/Desktop/capstone_final/ngam-je/backend
+
+</code></pre>
+<h3 id="verify-.env-file-is-there">Verify .env file is there:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token function">ls</span> -la <span class="token operator">|</span> <span class="token function">grep</span> .env
+
+</code></pre>
+<p>You should see:</p>
+<pre><code>
+-rwxrwxrwx 1 user user 1090 Nov 1 07:41 .env
+
+</code></pre>
+<h2 id="step-7-install-uv-python-package-manager">Step 7: Install uv (Python Package Manager)</h2>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token comment"># Install uv</span>
+
+curl -LsSf https://astral.sh/uv/install.sh <span class="token operator">|</span> sh
+
+  
+
+<span class="token comment"># Add to PATH</span>
+
+<span class="token function">export</span> PATH<span class="token operator">=</span><span class="token string">"<span class="token variable">$HOME</span>/.local/bin:<span class="token variable">$PATH</span>"</span>
+
+  
+
+<span class="token comment"># Verify installation</span>
+
+uv --version
+
+</code></pre>
+<p>You should see: <code>uv 0.9.7</code> (or similar)</p>
+<h2 id="step-8-install-python-dependencies">Step 8: Install Python Dependencies</h2>
+<pre class=" language-bash"><code class="prism  language-bash">
+uv <span class="token function">sync</span>
+
+</code></pre>
+<p><strong>Note:</strong> You might see a warning about hardlinking - this is normal on WSL and doesn’t affect functionality.</p>
+<h2 id="step-9-run-database-migrations">Step 9: Run Database Migrations</h2>
+<pre class=" language-bash"><code class="prism  language-bash">
+uv run alembic upgrade <span class="token function">head</span>
+
+</code></pre>
+<h3 id="expected-output">Expected output:</h3>
+<pre><code>
+INFO [alembic.runtime.migration] Context impl PostgresqlImpl.
+
+INFO [alembic.runtime.migration] Will assume transactional DDL.
+
+INFO [alembic.runtime.migration] Running upgrade -&gt; 143637ed0a88, Add User model
+
+</code></pre>
+<h3 id="verify-tables-were-created">Verify tables were created:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
+docker <span class="token function">exec</span> -it ngam-je-postgres psql -U ngamje -d ngamje_db -c <span class="token string">"\dt"</span>
+
+</code></pre>
+<p>You should see:</p>
+<pre><code>
+Schema | Name | Type | Owner
+
+--------+-----------------+-------+--------
+
+public | alembic_version | table | ngamje
+
+public | users | table | ngamje
+
+</code></pre>
+<h2 id="step-10-start-the-backend-server">Step 10: Start the Backend Server</h2>
+<pre class=" language-bash"><code class="prism  language-bash">
 uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
 
-<span class="token comment"># 4. In browser, test these URLs:</span>
-<span class="token comment"># - http://localhost:8000/docs</span>
-<span class="token comment"># - http://localhost:8000/api/v1/health</span>
 </code></pre>
-<p><strong>If all work = success!</strong>"</p>
+<h3 id="expected-output-1">Expected output:</h3>
+<pre><code>
+INFO: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+INFO: Application startup complete.
+
+</code></pre>
+<h3 id="access-the-api">Access the API:</h3>
+<ul>
+<li>
+<p><strong>API Root:</strong> <a href="http://localhost:8000">http://localhost:8000</a></p>
+</li>
+<li>
+<p><strong>API Docs (Swagger):</strong> <a href="http://localhost:8000/docs">http://localhost:8000/docs</a></p>
+</li>
+<li>
+<p><strong>Health Check:</strong> <a href="http://localhost:8000/api/v1/health">http://localhost:8000/api/v1/health</a></p>
+</li>
+</ul>
+<p>The terminal will show logs as requests come in - this is normal!</p>
+<hr>
+<h2 id="common-errors--solutions">Common Errors &amp; Solutions</h2>
+<h3 id="error-password-authentication-failed-for-user-ngamje">Error: password authentication failed for user “ngamje”</h3>
+<p><strong>Cause:</strong> Windows networking issues connecting from Python to Docker PostgreSQL.</p>
+<p><strong>Solution:</strong> Use WSL (Steps 2 &amp; 6-10 above). WSL provides Linux networking that works seamlessly with Docker.</p>
+<h3 id="error-no-pyvenv.cfg-file-with-exit-code-106">Error: No pyvenv.cfg file with exit code 106</h3>
+<p><strong>Cause:</strong> Broken virtual environment.</p>
+<p><strong>Solution:</strong> Delete and recreate:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token function">rm</span> -r .venv
+
+uv <span class="token function">sync</span>
+
+</code></pre>
+<h3 id="error-pgadmin-keeps-restarting">Error: pgAdmin keeps restarting</h3>
+<p><strong>Cause:</strong> Invalid email format in .env.</p>
+<p><strong>Solution:</strong> Change <code>PGADMIN_EMAIL</code> from <code>admin@ngamje.local</code> to <code>admin@example.com</code> (Step 3).</p>
+<h3 id="error-cant-activate-virtual-environment-in-wsl">Error: Can’t activate virtual environment in WSL</h3>
+<p>Don’t try to activate manually! Commands like:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token function">source</span> .venv/Scripts/activate <span class="token comment"># ❌ WRONG - Windows path</span>
+
+</code></pre>
+<p>Instead: Use <code>uv run</code> which handles activation automatically:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+uv run alembic upgrade <span class="token function">head</span> <span class="token comment"># ✅ CORRECT</span>
+
+uv run uvicorn src.app.main:app --reload <span class="token comment"># ✅ CORRECT</span>
+
+</code></pre>
+<h3 id="error-uv-command-not-found">Error: uv: command not found</h3>
+<p><strong>Solution:</strong> Add to PATH:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token function">export</span> PATH<span class="token operator">=</span><span class="token string">"<span class="token variable">$HOME</span>/.local/bin:<span class="token variable">$PATH</span>"</span>
+
+</code></pre>
+<p>To make permanent, add to <code>~/.bashrc</code>:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token keyword">echo</span> <span class="token string">'export PATH="<span class="token variable">$HOME</span>/.local/bin:<span class="token variable">$PATH</span>"'</span> <span class="token operator">&gt;&gt;</span> ~/.bashrc
+
+<span class="token function">source</span> ~/.bashrc
+
+</code></pre>
+<h3 id="error-fastapi-dev-doesnt-work">Error: fastapi dev doesn’t work</h3>
+<p><strong>Solution:</strong> Use uvicorn directly instead:</p>
+<pre class=" language-bash"><code class="prism  language-bash">
+uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
+
+</code></pre>
+<hr>
+<h2 id="using-vscode-with-wsl">Using VSCode with WSL</h2>
+<h3 id="option-1-wsl-terminal-in-vscode">Option 1: WSL Terminal in VSCode</h3>
+<ol>
+<li>
+<p>Press `Ctrl + `` (backtick) to open terminal</p>
+</li>
+<li>
+<p>Click dropdown next to <code>+</code> icon</p>
+</li>
+<li>
+<p>Select “Ubuntu (WSL)”</p>
+</li>
+</ol>
+<h3 id="option-2-connect-vscode-to-wsl-recommended">Option 2: Connect VSCode to WSL (Recommended)</h3>
+<ol>
+<li>
+<p>Install “WSL” extension in VSCode</p>
+</li>
+<li>
+<p>Press <code>Ctrl + Shift + P</code></p>
+</li>
+<li>
+<p>Type “WSL: Connect to WSL”</p>
+</li>
+<li>
+<p>VSCode reloads and runs entirely in WSL!</p>
+</li>
+<li>
+<p>Open folder: <code>/mnt/c/Users/[YOUR-USERNAME]/path/to/project</code></p>
+</li>
+</ol>
+<hr>
+<h2 id="quick-reference-commands">Quick Reference Commands</h2>
+<h3 id="start-everything">Start everything:</h3>
+<pre class=" language-powershell"><code class="prism  language-powershell">
+<span class="token comment"># From project root (Windows PowerShell)</span>
+
+cd C:\Users\<span class="token namespace">[YOUR-USERNAME]</span>\path\to\ngam<span class="token operator">-</span>je
+
+docker<span class="token operator">-</span>compose up <span class="token operator">-</span>d postgres pgadmin
+
+  
+
+<span class="token comment"># Switch to WSL</span>
+
+wsl
+
+  
+
+<span class="token comment"># Go to backend</span>
+
+cd <span class="token operator">/</span>mnt<span class="token operator">/</span>c<span class="token operator">/</span>Users<span class="token operator">/</span><span class="token namespace">[YOUR-USERNAME]</span><span class="token operator">/</span>path<span class="token operator">/</span>to<span class="token operator">/</span>ngam<span class="token operator">-</span>je<span class="token operator">/</span>backend
+
+  
+
+<span class="token comment"># Start backend</span>
+
+uv run uvicorn src<span class="token punctuation">.</span>app<span class="token punctuation">.</span>main:app <span class="token operator">--</span>reload <span class="token operator">--</span>host 0<span class="token punctuation">.</span>0<span class="token punctuation">.</span>0<span class="token punctuation">.</span>0 <span class="token operator">--</span>port 8000
+
+</code></pre>
+<h3 id="stop-everything">Stop everything:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
+<span class="token comment"># Stop backend: Press Ctrl+C in the terminal running uvicorn</span>
+
+  
+
+<span class="token comment"># Stop Docker (from project root in Windows PowerShell)</span>
+
+docker-compose down
+
+</code></pre>
+<h3 id="view-docker-logs">View Docker logs:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
+docker-compose logs postgres
+
+docker-compose logs pgadmin
+
+</code></pre>
+<h3 id="access-database-directly">Access database directly:</h3>
+<pre class=" language-bash"><code class="prism  language-bash">
+docker <span class="token function">exec</span> -it ngam-je-postgres psql -U ngamje -d ngamje_db
+
+</code></pre>
+<hr>
+<h2 id="summary">Summary</h2>
+<p>✅ Docker Desktop running</p>
+<p>✅ WSL installed with Ubuntu</p>
+<p>✅ .env file in backend folder with correct email</p>
+<p>✅ PostgreSQL running on port 5432</p>
+<p>✅ pgAdmin accessible at <a href="http://localhost:5050">http://localhost:5050</a></p>
+<p>✅ Database tables created via Alembic migrations</p>
+<p>✅ FastAPI backend running at <a href="http://localhost:8000">http://localhost:8000</a></p>
+<p><strong>Key Insight:</strong> WSL bridges the gap between Windows and Linux, solving Docker networking issues and matching your teacher’s Linux environment! 🎉</p>
 
